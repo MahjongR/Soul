@@ -2,8 +2,11 @@ name: Update HTML list in README
 
 on:
   push:
-    branches: [ main ]   # 如果你的預設分支是 master，就改成 master
+    branches: [ main ]   # 如果預設分支是 master，就改成 master
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   update-readme:
@@ -16,11 +19,11 @@ jobs:
 
       - name: Generate HTML list markdown
         run: |
-          python - << 'EOF'
+          python3 - << 'EOF'
           import os
 
           EXCLUDE_DIRS = {'.git', '.github', 'node_modules', '__pycache__'}
-          BASE_URL = "https://mahjongr.github.io/Soul"  # 之後有開 GitHub Pages 就會用到
+          BASE_URL = "https://mahjongr.github.io/Soul"  # 之後開 GitHub Pages 就會用
 
           rows = []
 
@@ -36,7 +39,7 @@ jobs:
                       continue
 
                   rel_path = os.path.join(rel_root, name) if rel_root != "." else name
-                  rel_path = rel_path.replace("\\", "/")  # 保險一點，處理 Windows 斜線
+                  rel_path = rel_path.replace("\\", "/")  # 處理 Windows 斜線
                   indent = "  " * depth
 
                   if BASE_URL:
@@ -53,7 +56,7 @@ jobs:
 
       - name: Inject HTML list into README
         run: |
-          python - << 'EOF'
+          python3 - << 'EOF'
           import re
 
           with open("README.md", "r", encoding="utf-8") as f:

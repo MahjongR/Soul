@@ -9,4 +9,3 @@
 - [html1.0.3.4.727H4_by_hand.html](https://mahjongr.github.io/Soul/html1.0.3.4.727H4_by_hand.html) · [原始檔](html1.0.3.4.727H4_by_hand.html)
 
 <!-- HTML_LIST_END -->
-test

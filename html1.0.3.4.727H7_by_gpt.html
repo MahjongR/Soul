@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/><title>聽牌計算器1.0.3.4.727H3</title>
+<style>
+  :root { 
+    --bg: #f7f7f7; --text: #333; --card-bg: #fff; --slot-border: #333;
+    --tw: clamp(32px, 7.2vw, 70px); --th: calc(var(--tw) * 1.25); --tf: calc(var(--tw) * 0.95); 
+  }
+  [data-theme='dark'] { --bg: #1a1a1a; --text: #eee; --card-bg: #333; --slot-border: #999; }
+
+  body { font-family: sans-serif; margin: 10px; background: var(--bg); color: var(--text); text-align: center; transition: background 0.3s, color 0.3s; }
+  
+  .header-controls { position: absolute; top: 10px; right: 10px; z-index: 100; display: flex; align-items: center; gap: 12px; }
+  .mode-btn { cursor: pointer; font-size: 22px; user-select: none; transition: transform 0.2s; }
+  .mode-btn:hover { transform: scale(1.2); }
+  
+  #hand, #extra, #pool { display: flex; justify-content: center; gap: 4px; margin-bottom: 8px; min-height: var(--th); }
+
+  .slot, .p-tile { 
+    width: var(--tw); height: var(--th); border: 2px solid var(--slot-border); border-radius: 6px; 
+    display: flex; align-items: center; justify-content: center; cursor: pointer; 
+    user-select: none; overflow: hidden; line-height: 1; transition: 0.3s; font-size: var(--tf);
+  }
+  
+  .slot { background: #0a0; color: #fff; }
+  .slot.ex { background: #07f; }
+  .slot.ex:empty { background: rgba(0, 119, 255, 0.15); border: 2px dashed #05a; }
+
+
+  .p-tile { background: var(--card-bg); color: var(--text); border-width: 1px; }
+  
+  button { margin: 0 4px; padding: 6px 10px; cursor: pointer; border-radius: 4px; border: 1px solid #999; background: var(--card-bg); color: var(--text); }
+
+  .result-container { position: relative; margin-top: 5px; min-height: 50px; }
+  #msg { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: #ff4d4d; font-weight: bold; font-size: 16px; background: var(--bg); padding: 0 10px; z-index: 10; opacity: 0; pointer-events: none; }
+  
+  .res { text-align: left; display: inline-block; font-size: 17px; line-height: 1.6; max-width: 95vw; }
+  .note { opacity: 0.7; font-size: 0.85em; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="header-controls">
+  <span class="mode-btn" onclick="changeType('MAN')" title="改萬子">🀇</span>
+  <span class="mode-btn" onclick="changeType('SOU')" title="改索子">🀐</span>
+  <span class="mode-btn" onclick="changeType('PIN')" title="改筒子">🀙</span>
+  <span class="mode-btn" onclick="toggleTheme()" id="theme-text" style="font-size:16px">🌙</span>
+</div>
+
+<h3 id="title-text">聽牌計算器1.0.3.4.727H3</h3>
+<div id="hand"></div><div id="extra"></div><div id="pool"></div>
+<div class="btn-group">
+  <button onclick="clearAll()">清理 (Esc)</button>
+  <button onclick="undo()">復原 (←)</button>
+  <button id="sort-btn" onclick="sortM=!sortM;r()">排序 (S)</button>
+</div>
+<div class="result-container"><div id="msg"></div><div id="res" class="res"></div></div>
+
+<script>
+const sets = {
+  PIN: ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'],
+  MAN: ['🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏'],
+  SOU: ['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘']
+};
+let T = sets.PIN, h=[], bk=[], sortM=true; 
+const sup=['⁰','¹','²','³','⁴'], handD=document.getElementById('hand'), exD=document.getElementById('extra'), poolD=document.getElementById('pool'), resD=document.getElementById('res'), msgD=document.getElementById('msg');
+
+function changeType(type) { T=sets[type]; document.getElementById('title-text').textContent={PIN:'筒子',MAN:'萬子',SOU:'索子'}[type]+'聽牌機1.0.3.4.727H3'; initPool(); r(); }
+function toggleTheme() { const b=document.body, isDark=b.getAttribute('data-theme')==='dark'; b.setAttribute('data-theme',isDark?'light':'dark'); document.getElementById('theme-text').textContent=isDark?'🌙':'☀️'; }
+function initPool() { poolD.innerHTML=''; T.forEach((t,i)=>{ let s=document.createElement('div'); s.className='p-tile'; s.textContent=t; s.onclick=()=>add(i); poolD.append(s); }); }
+
+for(let i=0;i<13;i++){ let s=document.createElement('div'); s.className='slot'; s.onclick=()=>rm(i); handD.append(s); }
+initPool();
+
+function add(v){ if(h.filter(x=>x===v).length>=4) return showMsg('上限4張'); if(h.length>=18) return showMsg('手牌已滿'); bk=[...h]; h.push(v); r(); }
+function rm(i){ if(h[i]===undefined) return; bk=[...h]; h.splice(i,1); r(); }
+function clearAll(){ if(!h.length) return; bk=[...h]; h=[]; r(); showMsg('已清理'); }
+function undo(){ if(!bk.length && !h.length) return showMsg('無紀錄'); [h, bk]=[bk, h]; r(); }
+function showMsg(m){ msgD.textContent=m; msgD.style.opacity=1; clearTimeout(window.mt); window.mt=setTimeout(()=>msgD.style.opacity=0, 1200); }
+
+function r(){
+  h.sort((a,b)=>a-b);
+  document.querySelectorAll('#hand .slot').forEach((x,i)=>x.textContent=h[i]!==undefined?T[h[i]]:'');
+  exD.innerHTML='';
+  for(let i=13;i<18;i++){
+    let x=document.createElement('div'); x.className='slot ex';
+    if(h[i]!==undefined){ x.textContent=T[h[i]]; x.onclick=()=>rm(i); }
+    exD.append(x);
+  }
+  if(h.length>=13) calc(); else { resD.innerHTML=''; document.getElementById('sort-btn').textContent='排序 (S)'; }
+}
+
+function win(c){
+  const check=(tc)=>{
+    let f=tc.findIndex(v=>v>0); if(f===-1) return 1;
+    if(tc[f]>=3){ tc[f]-=3; if(check(tc)) return 1; tc[f]+=3; }
+    if(f<=6&&tc[f+1]>0&&tc[f+2]>0){ tc[f]--; tc[f+1]--; tc[f+2]--; if(check(tc)) return 1; tc[f]++; tc[f+1]++; tc[f+2]++; }
+    return 0;
+  };
+  for(let i=0;i<9;i++) if(c[i]>=2){ let t=[...c]; t[i]-=2; if(check(t)) return 1; }
+  return (c.filter(v=>v===2).length===7); 
+}
+
+function getW(cArr){
+  let w=[];
+  for(let i=0;i<9;i++) if(cArr[i]<4){ cArr[i]++; if(win(cArr)) w.push(i); cArr[i]--; }
+  return w;
+}
+
+function calc(){
+  let results = [];
+  const cAll=Array(9).fill(0); h.forEach(v=>cAll[v]++);
+  
+  if(h.length===13){
+    let w=getW([...cAll]); if(w.length) results.push({d:[],w});
+  } else {
+    let diff = h.length - 13;
+    function findD(idx, rem, currentD) {
+      if (rem === 0) {
+        let tempC = [...cAll];
+        for(let i=0; i<9; i++) tempC[i] -= currentD[i];
+        let w = getW(tempC);
+        if (w.length) {
+          let dList = [];
+          for(let i=0; i<9; i++) for(let j=0; j<currentD[i]; j++) dList.push(i);
+          results.push({ d: dList, w: w.sort((a,b)=>a-b) });
+        }
+        return;
+      }
+      if (idx > 8) return;
+      for (let i = 0; i <= Math.min(rem, cAll[idx]); i++) {
+        currentD[idx] = i;
+        findD(idx + 1, rem - i, currentD);
+        currentD[idx] = 0;
+      }
+    }
+    findD(0, diff, Array(9).fill(0));
+  }
+
+  if(!results.length) {
+    document.getElementById('sort-btn').textContent = '排序 (S) 0組';
+    return resD.textContent='沒有聽牌';
+  }
+
+  let finalCombos = [], seen = new Set();
+  results.forEach(obj => {
+    let sum = 0;
+    let ws = obj.w.map(i => {
+      let rem = 4 - cAll[i];
+      sum += Math.max(0, rem);
+      return T[i] + sup[Math.max(0, rem)];
+    }).join(' ');
+    let key = obj.d.join(',') + '|' + obj.w.join(',');
+    if (!seen.has(key)) {
+      seen.add(key);
+      let fly = obj.w.length; // 飛 = 叫的數目（等牌種類數）
+      finalCombos.push({ 
+        txt: `${obj.d.length?'捨 '+obj.d.map(i=>T[i]).join('')+' → ':''}聽 ${ws}`, 
+        sum: sum,
+        fly: fly
+      });
+    }
+  });
+
+  if(sortM) finalCombos.sort((a,b)=>b.sum-a.sum);
+  
+  // 更新按鈕組數
+  document.getElementById('sort-btn').textContent = `排序 (S) ${finalCombos.length}組`;
+  
+  // 顯示為「聽 … 叫X飛 剩Y張」
+  resD.innerHTML = finalCombos
+    .map(l => `${l.txt} <span class="note">叫${l.fly}飛 剩${l.sum}張</span>`)
+    .join('<br>');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key >= '1' && e.key <= '9') add(parseInt(e.key)-1);
+  else if (e.key === 'Backspace') undo();
+  else if (e.key === 'Escape' || e.key === 'Delete') clearAll();
+  else if (e.key.toLowerCase() === 's') { sortM=!sortM; r(); }
+});
+
+r();
+</script>
+</body>
+</html>

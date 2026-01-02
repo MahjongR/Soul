@@ -3,6 +3,10 @@
 ## HTML 頁面一覽（自動產生）
 
 <!-- HTML_LIST_START -->
-此區塊會由 GitHub Actions 自動產生
+
+- [html1.0.3.3.726H_by_gemini.html](https://mahjongr.github.io/Soul/html1.0.3.3.726H_by_gemini.html) · [原始檔](html1.0.3.3.726H_by_gemini.html)
+- [html1.0.3.4.726H3_by_gemini.html](https://mahjongr.github.io/Soul/html1.0.3.4.726H3_by_gemini.html) · [原始檔](html1.0.3.4.726H3_by_gemini.html)
+- [html1.0.3.4.727H4_by_hand.html](https://mahjongr.github.io/Soul/html1.0.3.4.727H4_by_hand.html) · [原始檔](html1.0.3.4.727H4_by_hand.html)
+
 <!-- HTML_LIST_END -->
 test

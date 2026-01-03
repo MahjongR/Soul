@@ -1,8 +1,28 @@
-<!-- HTML_LIST_START -->
+   - name: Inject HTML list into README and index
+     run: |
+       python3 - << 'EOF'
+       import re
+       import os
 
-- [html1.0.3.3.726H_by_gemini.html](https://mahjongr.github.io/Soul/html1.0.3.3.726H_by_gemini.html) · [原始檔](html1.0.3.3.726H_by_gemini.html) · _4 days ago_
-- [html1.0.3.4.726H3_by_gemini.html](https://mahjongr.github.io/Soul/html1.0.3.4.726H3_by_gemini.html) · [原始檔](html1.0.3.4.726H3_by_gemini.html) · _4 days ago_
-- [html1.0.3.4.727H4_by_hand.html](https://mahjongr.github.io/Soul/html1.0.3.4.727H4_by_hand.html) · [原始檔](html1.0.3.4.727H4_by_hand.html) · _2 days ago_
-- [html1.0.3.4.727H7_by_gpt.html](https://mahjongr.github.io/Soul/html1.0.3.4.727H7_by_gpt.html) · [原始檔](html1.0.3.4.727H7_by_gpt.html) · _12 hours ago_
+       with open("HTML_LIST.md", "r", encoding="utf-8") as f:
+           html_list = f.read().rstrip()
 
-<!-- HTML_LIST_END -->
+       pattern = r"(<!-- HTML_LIST_START -->)(.*?)(<!-- HTML_LIST_END -->)"
+
+       for filename in ("README.md", "index.md"):
+           if not os.path.exists(filename):
+               continue
+
+           with open(filename, "r", encoding="utf-8") as f:
+               text = f.read()
+
+           new_text = re.sub(
+               pattern,
+               lambda m: m.group(1) + "\n\n" + html_list + "\n\n" + m.group(3),
+               text,
+               flags=re.S,
+           )
+
+           with open(filename, "w", encoding="utf-8") as f:
+               f.write(new_text)
+       EOF

@@ -16,16 +16,62 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # 需要完整歷史，才能查每個檔案最後修改時間
+          fetch-depth: 0
 
       - name: Generate HTML list markdown
         run: |
           python3 - << 'EOF'
           import os
+          import subprocess
+          import time
 
           EXCLUDE_DIRS = {'.git', '.github', 'node_modules', '__pycache__'}
-          BASE_URL = "https://mahjongr.github.io/Soul"  # 之後開 GitHub Pages 就會用
+          BASE_URL = "https://mahjongr.github.io/Soul"  # 有開 GitHub Pages 時用
 
-          rows = []
+          def get_last_commit_ts(path: str):
+              """取得某個檔案最後一次 commit 的 Unix timestamp（秒）。"""
+              try:
+                  ts = subprocess.check_output(
+                      ["git", "log", "-1", "--format=%ct", "--", path],
+                      stderr=subprocess.DEVNULL,
+                      text=True,
+                  ).strip()
+                  if not ts:
+                      return None
+                  return int(ts)
+              except Exception:
+                  return None
+
+          def format_ago(ts: int | None) -> str:
+              """把 timestamp 轉成 '5 days ago' / '12 hours ago' 這種字串。"""
+              if ts is None:
+                  return ""
+              now = int(time.time())
+              diff = max(0, now - ts)
+
+              minute = 60
+              hour = 60 * minute
+              day = 24 * hour
+              week = 7 * day
+
+              if diff < minute:
+                  return "just now"
+              if diff < hour:
+                  m = diff // minute
+                  return f"{m} minute{'s' if m != 1 else ''} ago"
+              if diff < day:
+                  h = diff // hour
+                  return f"{h} hour{'s' if h != 1 else ''} ago"
+              if diff < week:
+                  d = diff // day
+                  return f"{d} day{'s' if d != 1 else ''} ago"
+              # 超過一週就用 weeks
+              w = diff // week
+              return f"{w} week{'s' if w != 1 else ''} ago"
+
+          rows: list[str] = []
 
           for root, dirs, files in os.walk("."):
               # 過濾不要掃的資料夾
@@ -39,14 +85,18 @@ jobs:
                       continue
 
                   rel_path = os.path.join(rel_root, name) if rel_root != "." else name
-                  rel_path = rel_path.replace("\\", "/")  # 處理 Windows 斜線
+                  rel_path = rel_path.replace("\\", "/")  # 保險處理 Windows 斜線
                   indent = "  " * depth
+
+                  last_ts = get_last_commit_ts(rel_path)
+                  ago = format_ago(last_ts)
+                  ago_suffix = f" · _{ago}_" if ago else ""
 
                   if BASE_URL:
                       page_url = f"{BASE_URL}/{rel_path}"
-                      line = f"{indent}- [{rel_path}]({page_url}) · [原始檔]({rel_path})"
+                      line = f"{indent}- [{rel_path}]({page_url}) · [原始檔]({rel_path}){ago_suffix}"
                   else:
-                      line = f"{indent}- [{rel_path}]({rel_path})"
+                      line = f"{indent}- [{rel_path}]({rel_path}){ago_suffix}"
 
                   rows.append(line)
 
